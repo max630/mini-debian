@@ -1,0 +1,39 @@
+ABOUT
+=====
+
+A script to maintain own mini-distribution for debian.
+
+The goal is to have a single-command step between "git push" and "apt-get update && apt-get install".
+Or maybe even zero, if I ever put it to cron, though one is good enough for me.
+
+Most probably there is already something whcih does just this, but for now
+assembling my own is faster than learning what I saw. I try to maximize use of
+existing tools.
+
+INSTALL
+=======
+
+Work from any place, but requires some preparation.
+
+1. Install packages: sbuild, schroot, apt-ftparchive
+2. $ln -s $PWD/dot.sbuildrc ~/.sbuildrc
+3. Add files to home directory:
+~/.buildrc.local:------
+LOCAL_STORAGE_DIR=directory where all working data will be stored
+UPLOAD_DIR=scp url to put the result to
+----------------------
+~/.sbuildrc.local:-----
+{
+myname => 'Dohn Doe <a@b.c>',
+base_dir => 'same as LOCAL_STORAGE_DIR',
+}
+----------------------
+4. $sudo sbuild-adduser $LOGNAME
+   $sbuild-update --keygen
+   #sudo sbuild-createchroot wheezy $LOCAL_STORAGE_DIR/chroots/wheezy ftp://ftp.fi.debian.org/debian
+
+
+RUN
+===
+
+$.../build bla-bla.git@branch ..

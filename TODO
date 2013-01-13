@@ -1,0 +1,9 @@
+approximately from most to least important
+* do not leave garbage in /var/lib/sbuild
+* put reference to the rep to chroot (needed for dependencies)
+* signing
+* make possible releasing to another directory (devel)
+* checks of versions: to devel anything, to default only without '~'s and unique
+* learn mini-dinstall (probably needed for diff) and make correct Debian tree
+* versions for different debian branches
+* auto-creating of chroot
