@@ -1,0 +1,82 @@
+#!/bin/sh
+
+set -e
+
+
+LOCAL_CONFIG="$HOME/.buildrc.local"
+while true; do
+    case "$1" in
+    -c) shift
+        LOCAL_CONFIG="$1"
+        shift
+        ;;
+    -*) echo "Bad option: $1" >/dev/stderr
+        exit 1
+        ;;
+    *)  break
+        ;;
+    esac
+done
+
+. "$LOCAL_CONFIG"
+
+if [ -z "$LOCAL_STORAGE_DIR" ] || [ -z "$UPLOAD_DIR" ]; then
+    echo "Some option missing from config" >/dev/stderr
+    exit 1
+fi
+
+SCRIPT_DIR=`realpath $(dirname $0)`
+CHROOT=wheezy-i386-sbuild
+REPOS_BASE="$LOCAL_STORAGE_DIR"/repos
+RUN_DIR="$LOCAL_STORAGE_DIR"/run
+BUILD_DIR="$LOCAL_STORAGE_DIR"/build
+DEBIAN_DIR="$LOCAL_STORAGE_DIR"/debian/default
+
+cd "$RUN_DIR"
+
+main()
+{
+    for source in "$@"; do
+        build $source
+        mv -f "$BUILD_DIR/"*.changes "$BUILD_DIR/"*.deb "$DEBIAN_DIR"/
+        (
+            cd "$DEBIAN_DIR"
+            apt-ftparchive packages . >Packages
+            gzip <Packages >Packages.gz
+            apt-ftparchive release -c "$SCRIPT_DIR/"ftparchive.conf . >Release
+            gzip <Release >Release.gz
+        )
+        rsync -r "$DEBIAN_DIR" "$UPLOAD_DIR"
+    done
+}
+
+build()
+{
+    local source
+    source="$1"
+    case "$source" in
+    *.git@*)
+        source_url=`echo "$source"|awk -F@ '{print $1}'`
+        source_ref=`echo "$source"|awk -F@ '{print $2}'`
+        source_safe=`echo "$source_url"|tr -s '/:@' _`
+        repos="$REPOS_BASE/$source_safe"
+        if ! [ -d "$repos" ]; then
+            mkdir -p "$repos"
+            git init "$repos"
+        fi
+        (
+            cd "$repos"
+            git fetch -f "$source_url" "$source_ref":refs/remotes/source/source
+            git reset --hard refs/remotes/source/source
+            git clean -x -f -d
+        )
+        sbuild -c "$CHROOT" "$repos"
+        ;;
+    *)
+        sbuild -c "$CHROOT" "$source"
+        ;;
+    esac
+}
+
+
+main "$@"

@@ -1,0 +1,30 @@
+
+my $config_local = eval `cat ~/.sbuildrc.local`;
+if(!defined($config_local)) {
+    print STDERR "failed to read ~/.sbuildrc.local: $@\n";
+    exit(1);
+}
+foreach my $key (("myname", "base_dir")) {
+    if(!exists $config_local->{$key}) {
+        print STDERR "$key not defined in ~/.sbuildrc.local\n";
+        exit(1);
+    }
+}
+
+## DPKG-BUILDPACKAGE OPTIONS
+$maintainer_name=$config_local->{myname};
+$uploader_name=$config_local->{myname};
+# TODO: gpg
+$build_source = 0;
+
+## SBUILD BEHAVIOUR
+$purge_build_directory="never";
+$sbuild_mode = "user";
+
+
+## FILE AND DIRECTORY LOCATIONS
+$build_dir = $config_local->{base_dir} . "/build";
+$log_dir = $config_local->{base_dir} . "/logs";
+$stats_dir = $config_local->{base_dir} . "/stats";
+
+1;
